@@ -34,6 +34,12 @@ if not exist ".next\standalone\server.js" (
   echo Existing production build found. Skipping build...
 )
 
+if exist ".next\standalone\server.js" (
+  echo Syncing static assets...
+  if exist ".next\static" xcopy ".next\static" ".next\standalone\.next\static\" /E /I /Y >nul
+  if exist "public" xcopy "public" ".next\standalone\public\" /E /I /Y >nul
+)
+
 echo Starting 9Router production server on http://localhost:20128
 if exist ".next\standalone\server.js" (
   node .next\standalone\server.js

@@ -57,6 +57,9 @@ export default function ProfilePage() {
   const [proxyStatus, setProxyStatus] = useState({ type: "", message: "" });
   const [proxyLoading, setProxyLoading] = useState(false);
   const [proxyTestLoading, setProxyTestLoading] = useState(false);
+  const [autorun, setAutorun] = useState({ enabled: false, platform: "", output: "" });
+  const [autorunLoading, setAutorunLoading] = useState(false);
+  const [autorunStatus, setAutorunStatus] = useState({ type: "", message: "" });
 
   useEffect(() => {
     setLocale(getLocaleFromCookie());
@@ -87,6 +90,10 @@ export default function ProfilePage() {
         console.error("Failed to fetch settings:", err);
         setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    loadAutorunStatus();
   }, []);
 
   useEffect(() => {
@@ -471,6 +478,51 @@ export default function ProfilePage() {
     }
   };
 
+  const loadAutorunStatus = async () => {
+    try {
+      const res = await fetch("/api/settings/autorun", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setAutorun({
+          enabled: data.enabled === true,
+          platform: data.platform || "",
+          output: data.output || "",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load autorun status:", err);
+    }
+  };
+
+  const updateAutorun = async (enabled) => {
+    setAutorunLoading(true);
+    setAutorunStatus({ type: "", message: "" });
+
+    try {
+      const res = await fetch("/api/settings/autorun", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success !== false) {
+        setAutorun({
+          enabled: data.enabled === true,
+          platform: data.platform || autorun.platform,
+          output: data.output || "",
+        });
+        setAutorunStatus({ type: "success", message: enabled ? "Auto run enabled" : "Auto run disabled" });
+      } else {
+        setAutorunStatus({ type: "error", message: data.error || "Failed to update auto run" });
+      }
+    } catch (err) {
+      setAutorunStatus({ type: "error", message: "An error occurred" });
+    } finally {
+      setAutorunLoading(false);
+    }
+  };
+
   const handleExportDatabase = async () => {
     setDbLoading(true);
     setDbStatus({ type: "", message: "" });
@@ -604,6 +656,44 @@ export default function ProfilePage() {
                 <p className="text-xs sm:text-sm text-text-muted font-mono break-all">~/.9router/db/data.sqlite</p>
               </div>
             </div>
+            <div className="flex items-start sm:items-center justify-between p-3 rounded-lg bg-bg border border-border gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm sm:text-base">Auto Run</p>
+                <p className="text-xs sm:text-sm text-text-muted">
+                  Start 9Router automatically on {autorun.platform === "windows" ? "Windows login" : autorun.platform === "linux" ? "Ubuntu/Linux boot/login" : "system login"}.
+                </p>
+              </div>
+              <Toggle
+                checked={autorun.enabled === true}
+                onChange={() => updateAutorun(!(autorun.enabled === true))}
+                disabled={autorunLoading}
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                icon="refresh"
+                onClick={loadAutorunStatus}
+                disabled={autorunLoading}
+                className="w-full sm:w-auto"
+              >
+                Refresh Auto Run
+              </Button>
+              <Button
+                variant="secondary"
+                icon="terminal"
+                onClick={() => setAutorunStatus({ type: "success", message: autorun.output || "No autorun output" })}
+                disabled={autorunLoading}
+                className="w-full sm:w-auto"
+              >
+                Show Status
+              </Button>
+            </div>
+            {autorunStatus.message && (
+              <p className={`text-sm whitespace-pre-wrap ${autorunStatus.type === "error" ? "text-red-500" : "text-green-600 dark:text-green-400"}`}>
+                {autorunStatus.message}
+              </p>
+            )}
             <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 variant="secondary"

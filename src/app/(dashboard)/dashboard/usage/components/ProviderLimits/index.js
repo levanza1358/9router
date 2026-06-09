@@ -691,6 +691,13 @@ export default function ProviderLimits() {
     bulkSetActive(ids, true);
   };
 
+  const handleEnableTurnedOff = () => {
+    const ids = sortedConnections
+      .filter((c) => !(c.isActive ?? true))
+      .map((c) => c.id);
+    bulkSetActive(ids, true);
+  };
+
   const selectedProviderLabel =
     providerFilter === "all" ? "All providers" : providerFilter;
   const hasEligibleConnections = totals.eligibleConnections > 0;
@@ -916,6 +923,20 @@ export default function ProviderLimits() {
               check_circle
             </span>
             <span className="hidden sm:inline">Turn on Available</span>
+          </button>
+
+          {/* Bulk: enable all turned-off accounts on current page */}
+          <button
+            type="button"
+            onClick={handleEnableTurnedOff}
+            disabled={bulkToggling}
+            className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-sky-500/30 px-2 text-xs text-sky-500 transition-colors hover:bg-sky-500/10 disabled:opacity-50"
+            title="Enable all turned-off connections on the current page"
+          >
+            <span className="material-symbols-outlined text-[14px]">
+              restart_alt
+            </span>
+            <span className="hidden sm:inline">Turn on Off</span>
           </button>
 
           {/* Auto-refresh toggle */}
