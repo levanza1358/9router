@@ -18,6 +18,8 @@
 /.next-cli-build/
 /out/
 cli/.build-home/
+.build-home/
+.runtime-home/
 product
 # production
 /build
@@ -72,3 +74,6 @@ ecosystem.config.*
 scripts/agSniffer/*
 gitbooks/*
 gitbook/README.md
+
+# local imported provider tokens / secrets
+*@*.json

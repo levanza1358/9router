@@ -461,8 +461,35 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
 
       const input = callbackUrl.trim();
 
+      // Codex: import exported account JSON containing access_token / refresh_token.
+      if (provider === "codex" && input.startsWith("{") && input.endsWith("}")) {
+        const account = JSON.parse(input);
+        const res = await fetch("/api/oauth/codex/import-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(account),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to import Codex account JSON");
+        setStep("success");
+        onSuccess?.();
+        return;
+      }
+
       // Detect raw JWT access token (starts with eyJ) — skip URL parsing
       if (input.startsWith("eyJ") && input.includes(".")) {
+        if (provider === "codex") {
+          const res = await fetch("/api/oauth/codex/import-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ accessToken: input }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Failed to import Codex access token");
+          setStep("success");
+          onSuccess?.();
+          return;
+        }
         await exchangeTokens(input, null);
         return;
       }
@@ -508,6 +535,8 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
   const modalTitle = isXaiProvider ? "Connect Grok Build OAuth" : `Connect ${providerInfo.name}`;
   const manualPlaceholder = isXaiProvider
     ? "http://127.0.0.1:56121/callback?code=... or copied code"
+    : provider === "codex"
+    ? "Callback URL, raw access token, or exported account JSON"
     : placeholderUrl;
 
   return (
@@ -549,19 +578,30 @@ export default function OAuthModal({ isOpen, provider, providerInfo, onSuccess, 
 
               <div>
                 <p className="text-sm font-medium mb-2">
-                  Step 2: Paste the {provider === "xai" ? "callback URL or copied code" : "callback URL"} here
+                  Step 2: Paste the {provider === "xai" ? "callback URL or copied code" : provider === "codex" ? "callback URL, access token, or account JSON" : "callback URL"} here
                 </p>
                 <p className="text-xs text-text-muted mb-2">
                   {provider === "xai"
                     ? "If xAI shows a code instead of redirecting, paste that code here."
+                    : provider === "codex"
+                    ? "You can paste exported JSON with access_token, refresh_token, and id_token fields."
                     : "After authorization, copy the full URL from your browser."}
                 </p>
-                <Input
+                {provider === "codex" ? (
+                  <textarea
+                    value={callbackUrl}
+                    onChange={(e) => setCallbackUrl(e.target.value)}
+                    placeholder={manualPlaceholder}
+                    className="w-full min-h-32 rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs text-text resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                ) : (
+                  <Input
                   value={callbackUrl}
                   onChange={(e) => setCallbackUrl(e.target.value)}
                   placeholder={manualPlaceholder}
                   className="font-mono text-xs"
-                />
+                  />
+                )}
               </div>
             </div>
 

@@ -10,8 +10,8 @@
   [![npm](https://img.shields.io/npm/v/9router.svg)](https://www.npmjs.com/package/9router)
   [![Downloads](https://img.shields.io/npm/dm/9router.svg)](https://www.npmjs.com/package/9router)
   [![Docker Pulls](https://img.shields.io/docker/pulls/decolua/9router.svg?logo=docker&label=Docker%20pulls)](https://hub.docker.com/r/decolua/9router)
-  [![GHCR](https://img.shields.io/badge/GHCR-decolua%2F9router-blue?logo=github)](https://github.com/decolua/9router/pkgs/container/9router)
-  [![License](https://img.shields.io/npm/l/9router.svg)](https://github.com/decolua/9router/blob/main/LICENSE)
+  [![GHCR](https://img.shields.io/badge/GHCR-levanza1358%2F9router-blue?logo=github)](https://github.com/levanza1358/9router/pkgs/container/9router)
+  [![License](https://img.shields.io/npm/l/9router.svg)](https://github.com/levanza1358/9router/blob/master/LICENSE)
 
   <a href="https://trendshift.io/repositories/22628" target="_blank"><img src="https://trendshift.io/api/badge/repositories/22628" alt="decolua%2F9router | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
   
@@ -106,7 +106,13 @@ npm install
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Production mode:
+Production mode (Windows, no dev recompile/render loop):
+
+```bat
+run-prod.bat
+```
+
+Production mode (manual):
 
 ```bash
 npm run build
@@ -174,7 +180,7 @@ Default URLs:
 
 </div>
 
-> 🎬 **Made a video about 9Router?** Submit a [Pull Request](https://github.com/decolua/9router/pulls) adding your video to this section — we'll merge it!
+> 🎬 **Made a video about 9Router?** Add it in this fork's README video section.
 
 ---
 
@@ -1021,7 +1027,7 @@ Model: cc/claude-opus-4-7
 
 ```bash
 # Clone and install
-git clone https://github.com/decolua/9router.git
+git clone https://github.com/levanza1358/9router.git
 cd 9router
 npm install
 npm run build
@@ -1052,7 +1058,7 @@ pm2 startup
 
 Published images (multi-platform `linux/amd64` + `linux/arm64`):
 - Docker Hub: [`decolua/9router`](https://hub.docker.com/r/decolua/9router)
-- GHCR: [`ghcr.io/decolua/9router`](https://github.com/decolua/9router/pkgs/container/9router)
+- GHCR: [`ghcr.io/levanza1358/9router`](https://github.com/levanza1358/9router/pkgs/container/9router)
 
 **Quick start (use published image):**
 
@@ -1070,7 +1076,7 @@ docker run -d \
 **Build from source (dev):**
 
 ```bash
-git clone https://github.com/decolua/9router.git
+git clone https://github.com/levanza1358/9router.git
 cd 9router/app
 docker build -t 9router .
 docker run -d --name 9router -p 20128:20128 \
@@ -1270,8 +1276,8 @@ Authorization: Bearer your-api-key
 ## 📧 Support
 
 - **Website**: [9router.com](https://9router.com)
-- **GitHub**: [github.com/decolua/9router](https://github.com/decolua/9router)
-- **Issues**: [github.com/decolua/9router/issues](https://github.com/decolua/9router/issues)
+- **GitHub**: [github.com/levanza1358/9router](https://github.com/levanza1358/9router)
+- **Issues**: [github.com/levanza1358/9router/issues](https://github.com/levanza1358/9router/issues)
 
 ---
 
@@ -1279,13 +1285,13 @@ Authorization: Bearer your-api-key
 
 Thanks to all contributors who helped make 9Router better!
 
-[![Contributors](https://contrib.rocks/image?repo=decolua/9router&max=150&columns=15&anon=1&v=20260309)](https://github.com/decolua/9router/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=levanza1358/9router&max=150&columns=15&anon=1&v=20260309)](https://github.com/levanza1358/9router/graphs/contributors)
 
 ---
 
 ## 📊 Star Chart
 
-[![Star Chart](https://starchart.cc/decolua/9router.svg?variant=adaptive)](https://starchart.cc/decolua/9router)
+[![Star Chart](https://starchart.cc/levanza1358/9router.svg?variant=adaptive)](https://starchart.cc/levanza1358/9router)
 
 
 

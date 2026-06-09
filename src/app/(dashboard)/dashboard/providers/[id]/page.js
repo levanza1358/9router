@@ -33,6 +33,9 @@ export default function ProviderDetailPage() {
   const [providerNode, setProviderNode] = useState(null);
   const [proxyPools, setProxyPools] = useState([]);
   const [showOAuthModal, setShowOAuthModal] = useState(false);
+  const [showCodexJsonImportModal, setShowCodexJsonImportModal] = useState(false);
+  const [codexJsonImporting, setCodexJsonImporting] = useState(false);
+  const [codexJsonImportResults, setCodexJsonImportResults] = useState([]);
   const [showIFlowCookieModal, setShowIFlowCookieModal] = useState(false);
   const [showAddApiKeyModal, setShowAddApiKeyModal] = useState(false);
   const [addConnectionError, setAddConnectionError] = useState("");
@@ -584,6 +587,40 @@ export default function ProviderDetailPage() {
   const handleOAuthSuccess = () => {
     fetchConnections();
     setShowOAuthModal(false);
+  };
+
+  const handleCodexJsonFiles = async (files) => {
+    const jsonFiles = Array.from(files || []).filter((file) => file.name.toLowerCase().endsWith(".json"));
+    if (jsonFiles.length === 0) {
+      setCodexJsonImportResults([{ file: "No JSON files", ok: false, error: "Select one or more .json files" }]);
+      return;
+    }
+
+    setCodexJsonImporting(true);
+    setCodexJsonImportResults([]);
+    const results = [];
+    for (const file of jsonFiles) {
+      try {
+        const text = await file.text();
+        const payload = JSON.parse(text);
+        if (payload.type && payload.type !== "codex") {
+          throw new Error(`Unsupported type: ${payload.type}`);
+        }
+        const res = await fetch("/api/oauth/codex/import-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Import failed");
+        results.push({ file: file.name, ok: true, email: data.connection?.email || payload.email || "Imported" });
+      } catch (error) {
+        results.push({ file: file.name, ok: false, error: error.message });
+      }
+      setCodexJsonImportResults([...results]);
+    }
+    setCodexJsonImporting(false);
+    await fetchConnections();
   };
 
   const handleIFlowCookieSuccess = () => {
@@ -1325,6 +1362,11 @@ export default function ProviderDetailPage() {
               <div className="flex gap-2">
                 {hasDualAuthModes ? (
                   <>
+                      {providerId === "codex" && (
+                        <Button size="sm" icon="upload_file" variant="secondary" onClick={() => setShowCodexJsonImportModal(true)}>
+                          Import JSON
+                        </Button>
+                      )}
                     <Button size="sm" icon="lock" variant="secondary" onClick={triggerOAuthConnection}>
                       {oauthConnectionLabel}
                     </Button>
@@ -1337,6 +1379,11 @@ export default function ProviderDetailPage() {
                     {!isCompatible && providerId === "iflow" && (
                       <Button size="sm" icon="cookie" variant="secondary" onClick={() => setShowIFlowCookieModal(true)}>
                         Cookie
+                      </Button>
+                    )}
+                    {!isCompatible && providerId === "codex" && (
+                      <Button size="sm" icon="upload_file" variant="secondary" onClick={() => setShowCodexJsonImportModal(true)}>
+                        Import JSON
                       </Button>
                     )}
                     <Button
@@ -1385,6 +1432,17 @@ export default function ProviderDetailPage() {
                   )}
                   {hasDualAuthModes ? (
                     <>
+                      {providerId === "codex" && (
+                        <Button
+                          size="sm"
+                          icon="upload_file"
+                          variant="secondary"
+                          onClick={() => setShowCodexJsonImportModal(true)}
+                          className="w-full sm:w-auto"
+                        >
+                          Import JSON
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         icon="lock"
@@ -1404,14 +1462,27 @@ export default function ProviderDetailPage() {
                       </Button>
                     </>
                   ) : (
-                    <Button
-                      size="sm"
-                      icon="add"
-                      onClick={triggerAddConnection}
-                      className="w-full sm:w-auto"
-                    >
-                      Add
-                    </Button>
+                    <>
+                      {providerId === "codex" && (
+                        <Button
+                          size="sm"
+                          icon="upload_file"
+                          variant="secondary"
+                          onClick={() => setShowCodexJsonImportModal(true)}
+                          className="w-full sm:w-auto"
+                        >
+                          Import JSON
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        icon="add"
+                        onClick={triggerAddConnection}
+                        className="w-full sm:w-auto"
+                      >
+                        Add
+                      </Button>
+                    </>
                   )}
                 </div>
               )}
@@ -1455,6 +1526,65 @@ export default function ProviderDetailPage() {
       </Card>
 
       {bulkActionModal}
+
+      {providerId === "codex" && (
+        <Modal
+          isOpen={showCodexJsonImportModal}
+          onClose={() => {
+            if (codexJsonImporting) return;
+            setShowCodexJsonImportModal(false);
+          }}
+          title="Batch Import Codex JSON"
+        >
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-text-muted">
+              Select one or more exported Codex account <code>.json</code> files.
+            </p>
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-primary/40 px-4 py-8 text-center transition-colors hover:border-primary hover:bg-primary/5">
+              <span className="material-symbols-outlined mb-2 text-3xl text-primary">upload_file</span>
+              <span className="text-sm font-medium">Choose JSON files</span>
+              <span className="text-xs text-text-muted">Multiple files supported</span>
+              <input
+                type="file"
+                accept="application/json,.json"
+                multiple
+                className="hidden"
+                disabled={codexJsonImporting}
+                onChange={(e) => handleCodexJsonFiles(e.target.files)}
+              />
+            </label>
+            {codexJsonImporting && (
+              <div className="flex items-center gap-2 text-sm text-text-muted">
+                <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                Importing...
+              </div>
+            )}
+            {codexJsonImportResults.length > 0 && (
+              <div className="max-h-64 overflow-auto rounded-lg border border-border">
+                {codexJsonImportResults.map((result, index) => (
+                  <div key={`${result.file}-${index}`} className="flex items-start gap-2 border-b border-border px-3 py-2 last:border-b-0">
+                    <span className={`material-symbols-outlined mt-0.5 text-[18px] ${result.ok ? "text-green-600" : "text-red-500"}`}>
+                      {result.ok ? "check_circle" : "error"}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium">{result.file}</p>
+                      <p className="break-words text-xs text-text-muted">{result.ok ? result.email : result.error}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button
+              onClick={() => setShowCodexJsonImportModal(false)}
+              variant="ghost"
+              fullWidth
+              disabled={codexJsonImporting}
+            >
+              Close
+            </Button>
+          </div>
+        </Modal>
+      )}
 
       {/* Modals */}
       {providerId === "kiro" ? (
