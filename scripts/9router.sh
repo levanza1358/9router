@@ -3,13 +3,17 @@ set -euo pipefail
 
 CMD="${1:-help}"
 APP_DIR="${NINEROUTER_APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+REAL_HOME="${SUDO_USER:+$(getent passwd "$SUDO_USER" | cut -d: -f6)}"
+REAL_HOME="${REAL_HOME:-${HOME:-$(getent passwd "$(id -un)" | cut -d: -f6)}}"
 PORT="20128"
 RUNTIME_HOME="$APP_DIR/.runtime-home"
 PID_FILE="$RUNTIME_HOME/9router.pid"
 LOG_DIR="$RUNTIME_HOME/logs"
 LOG_FILE="$LOG_DIR/server.log"
 SERVICE_NAME="9router.service"
-SERVICE_FILE="$HOME/.config/systemd/user/$SERVICE_NAME"
+SERVICE_DIR="$REAL_HOME/.config/systemd/user"
+SERVICE_FILE="$SERVICE_DIR/$SERVICE_NAME"
+BIN_FILE="$REAL_HOME/.local/bin/9router"
 
 set_env() {
   export HOME="$RUNTIME_HOME"
@@ -104,7 +108,7 @@ status_server() {
 }
 
 autorun_on() {
-  mkdir -p "$HOME/.config/systemd/user"
+  mkdir -p "$SERVICE_DIR"
   cat > "$SERVICE_FILE" <<EOF
 [Unit]
 Description=9Router personal server
@@ -113,8 +117,8 @@ After=network-online.target
 [Service]
 Type=forking
 Environment=NINEROUTER_APP_DIR=$APP_DIR
-ExecStart=$HOME/.local/bin/9router start
-ExecStop=$HOME/.local/bin/9router stop
+ExecStart=$BIN_FILE start
+ExecStop=$BIN_FILE stop
 PIDFile=$PID_FILE
 Restart=on-failure
 RestartSec=5
