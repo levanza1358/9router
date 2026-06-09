@@ -148,6 +148,7 @@ Command lain:
 9router stop     # matikan server
 9router restart  # restart server
 9router rebuild  # hapus .next lalu build ulang
+9router update   # git pull + npm install + rebuild + restart kalau sedang jalan
 9router logs     # lihat log server
 9router open     # buka dashboard
 ```
@@ -203,6 +204,23 @@ Kalau ada perubahan kode, hapus build lama lalu build ulang:
 9router rebuild
 9router restart
 ```
+
+## Update dari GitHub
+
+Pakai command ini untuk update repo hasil install one-line/manual:
+
+```bash
+9router update
+```
+
+Command ini akan:
+
+1. stop server kalau sedang jalan,
+2. `git pull --ff-only`,
+3. `npm install`,
+4. hapus `.next`,
+5. build ulang production,
+6. start lagi kalau sebelumnya jalan.
 
 ## Mode Development
 

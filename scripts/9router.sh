@@ -57,6 +57,30 @@ build_app() {
   sync_assets
 }
 
+update_app() {
+  cd "$APP_DIR"
+  local was_running=""
+  was_running="$(port_pid)"
+  if [ -n "$was_running" ]; then
+    stop_server
+  fi
+
+  if [ -d ".git" ]; then
+    git pull --ff-only
+  else
+    echo "Skip git pull: not a git repo"
+  fi
+
+  npm install
+  rm -rf "$APP_DIR/.next"
+  build_app
+
+  if [ -n "$was_running" ]; then
+    start_server
+  fi
+  echo "9Router updated"
+}
+
 start_server() {
   local existing
   existing="$(port_pid)"
@@ -155,6 +179,7 @@ case "$CMD" in
   status) status_server ;;
   build) build_app ;;
   rebuild) rm -rf "$APP_DIR/.next"; build_app ;;
+  update) update_app ;;
   logs) touch "$LOG_FILE"; tail -n 100 -f "$LOG_FILE" ;;
   open) python -m webbrowser "http://localhost:$PORT/dashboard" ;;
   autorun-on) autorun_on ;;
@@ -168,6 +193,7 @@ case "$CMD" in
     echo "  9router status   Show status"
     echo "  9router build    Build production"
     echo "  9router rebuild  Clean build production"
+    echo "  9router update   Pull latest, install, rebuild, restart if needed"
     echo "  9router logs     Tail logs"
     echo "  9router open     Open dashboard"
     echo "  9router autorun-on      Start at login/boot"

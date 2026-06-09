@@ -1,6 +1,6 @@
 param(
   [Parameter(Position = 0)]
-  [ValidateSet("start", "stop", "restart", "status", "build", "rebuild", "logs", "open", "autorun-on", "autorun-off", "autorun-status", "help")]
+  [ValidateSet("start", "stop", "restart", "status", "build", "rebuild", "update", "logs", "open", "autorun-on", "autorun-off", "autorun-status", "help")]
   [string]$Command = "help"
 )
 
@@ -108,6 +108,32 @@ function Build-App {
   }
 }
 
+function Update-App {
+  Push-Location $AppDir
+  try {
+    $wasRunning = [bool](Get-PortProcessId)
+    if ($wasRunning) { Stop-Server }
+
+    if (Test-Path ".git") {
+      git pull --ff-only
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } else {
+      Write-Host "Skip git pull: not a git repo"
+    }
+
+    npm install
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    if (Test-Path ".next") { Remove-Item -Recurse -Force ".next" }
+    Build-App
+
+    if ($wasRunning) { Start-Server }
+    Write-Host "9Router updated"
+  } finally {
+    Pop-Location
+  }
+}
+
 function Start-Server {
   $existing = Get-PortProcessId
   if ($existing) {
@@ -186,6 +212,7 @@ switch ($Command) {
   "status" { Show-Status }
   "build" { Build-App }
   "rebuild" { Push-Location $AppDir; try { if (Test-Path ".next") { Remove-Item -Recurse -Force ".next" }; Build-App } finally { Pop-Location } }
+  "update" { Update-App }
   "logs" { if (Test-Path $LogFile) { Get-Content $LogFile -Tail 100 -Wait } elseif (Test-Path $ErrLogFile) { Get-Content $ErrLogFile -Tail 100 -Wait } else { Write-Host "No log yet: $LogFile" } }
   "open" { Start-Process "http://localhost:$Port/dashboard" }
   "autorun-on" { Enable-Autorun }
@@ -199,6 +226,7 @@ switch ($Command) {
     Write-Host "  9router status   Show status"
     Write-Host "  9router build    Build production"
     Write-Host "  9router rebuild  Clean build production"
+    Write-Host "  9router update   Pull latest, install, rebuild, restart if needed"
     Write-Host "  9router logs     Tail logs"
     Write-Host "  9router open     Open dashboard"
     Write-Host "  9router autorun-on      Start at login"
