@@ -584,6 +584,56 @@ export default function ProviderDetailPage() {
     });
   };
 
+  const handleDeleteSelected = () => {
+    const count = selectedConnectionIds.length;
+    if (count === 0) return;
+    setConfirmState({
+      title: "Delete Selected Connections",
+      message: `Delete ${count} selected connection${count > 1 ? "s" : ""}?`,
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          const res = await fetch("/api/providers/bulk", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: selectedConnectionIds }),
+          });
+          if (res.ok) {
+            setConnections(prev => prev.filter(c => !selectedConnectionIds.includes(c.id)));
+            setSelectedConnectionIds([]);
+          }
+        } catch (error) {
+          console.log("Error deleting selected connections:", error);
+        }
+      }
+    });
+  };
+
+  const handleDeleteAll = () => {
+    const count = connections.length;
+    if (count === 0) return;
+    setConfirmState({
+      title: "Delete All Connections",
+      message: `Delete all ${count} connection${count > 1 ? "s" : ""} for ${providerInfo?.name || providerId}? This cannot be undone.`,
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          const res = await fetch("/api/providers/bulk", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ providerId }),
+          });
+          if (res.ok) {
+            setConnections([]);
+            setSelectedConnectionIds([]);
+          }
+        } catch (error) {
+          console.log("Error deleting all connections:", error);
+        }
+      }
+    });
+  };
+
   const handleOAuthSuccess = () => {
     fetchConnections();
     setShowOAuthModal(false);
@@ -817,6 +867,15 @@ export default function ProviderDetailPage() {
         .map((conn, index) => (
           <div key={conn.id} className="flex min-w-0 items-stretch">
             <div className="flex-1 min-w-0">
+                <div className="flex shrink-0 items-center pr-1">
+                  <input
+                    type="checkbox"
+                    checked={isSelected(conn.id)}
+                    onChange={() => toggleSelectConnection(conn.id)}
+                    className="size-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                  />
+                </div>
+              
               <ConnectionRow
                 connection={conn}
                 proxyPools={proxyPools}
@@ -1270,6 +1329,37 @@ export default function ProviderDetailPage() {
         <Card>
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold">Connections</h2>
+            
+            {/* Selection actions */}
+            {connections.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <label className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAllConnections}
+                    className="size-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                  />
+                  Select All
+                </label>
+                {selectedConnectionIds.length > 0 && (
+                  <button
+                    onClick={handleDeleteSelected}
+                    className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-red-500 hover:bg-red-500/10 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">delete</span>
+                    Delete Selected ({selectedConnectionIds.length})
+                  </button>
+                )}
+                <button
+                  onClick={handleDeleteAll}
+                  className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-red-600 hover:bg-red-600/10 transition-colors font-medium"
+                >
+                  <span className="material-symbols-outlined text-[14px]">delete_forever</span>
+                  Delete All
+                </button>
+              </div>
+            )}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               {connections.length > 0 && proxyPools.length > 0 && (
                 <Button
